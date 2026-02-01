@@ -10,7 +10,7 @@ import {
 } from "./lib/socket";
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname = "localhost";
+const hostname = process.env.HOSTNAME || "0.0.0.0";
 const port = parseInt(process.env.PORT || "3000", 10);
 
 const JWT_SECRET = new TextEncoder().encode(
