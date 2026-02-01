@@ -29,9 +29,12 @@ app.prepare().then(() => {
     pingTimeout: 60000,
     pingInterval: 25000,
     cors: {
-      origin: "*",
+      origin: [
+        "https://dz4yeass8h.eu-west-2.awsapprunner.com",
+        "http://localhost:3000"
+      ],
       methods: ["GET", "POST"],
-      credentials: false,
+      credentials: true,
     },
   });
 
