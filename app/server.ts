@@ -28,7 +28,9 @@ app.prepare().then(() => {
 
   const io = new SocketIOServer(server, {
     cors: {
-      origin: dev ? "http://localhost:3000" : process.env.NEXT_PUBLIC_APP_URL,
+      origin: dev
+        ? "http://localhost:3000"
+        : process.env.NEXT_PUBLIC_APP_URL || true, // true allows any origin in production
       methods: ["GET", "POST"],
       credentials: true,
     },
