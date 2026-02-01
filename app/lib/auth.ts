@@ -1,11 +1,9 @@
 import bcrypt from "bcrypt";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { JWT_SECRET } from "@/lib/constants";
 
 const SALT_ROUNDS = 12;
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "default-secret-change-in-production"
-);
 const SESSION_COOKIE_NAME = "session";
 
 export async function hashPassword(password: string): Promise<string> {

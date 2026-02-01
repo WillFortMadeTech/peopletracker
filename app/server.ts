@@ -8,16 +8,9 @@ import {
   registerUserSocket,
   unregisterUserSocket,
 } from "./lib/socket";
+import { JWT_SECRET } from "./lib/constants";
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname = process.env.HOSTNAME || "0.0.0.0";
-const port = parseInt(process.env.PORT || "3000", 10);
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "default-secret-change-in-production"
-);
-
-const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
@@ -28,11 +21,9 @@ app.prepare().then(() => {
 
   const io = new SocketIOServer(server, {
     cors: {
-      origin: dev
-        ? "http://localhost:3000"
-        : process.env.NEXT_PUBLIC_APP_URL || true, // true allows any origin in production
+      origin: "*",
       methods: ["GET", "POST"],
-      credentials: true,
+      credentials: false,
     },
   });
 
@@ -40,16 +31,20 @@ app.prepare().then(() => {
 
   io.use(async (socket, next) => {
     const token = socket.handshake.auth.token;
+    console.log(`Socket connection attempt from ${socket.id}`);
 
     if (!token) {
+      console.log(`Socket ${socket.id} missing token`);
       return next(new Error("Authentication required"));
     }
 
     try {
       const { payload } = await jwtVerify(token, JWT_SECRET);
       socket.data.userId = payload.userId as string;
+      console.log(`Socket ${socket.id} authenticated as user ${payload.userId}`);
       next();
-    } catch {
+    } catch (err) {
+      console.log(`Socket ${socket.id} token verification failed:`, err);
       next(new Error("Invalid token"));
     }
   });

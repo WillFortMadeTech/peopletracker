@@ -20,10 +20,8 @@ android {
             useSupportLibrary = true
         }
 
-        // API base URL - use Docker service name when running in docker-compose
-        // For Docker: http://app:3000
-        // For local emulator: http://10.0.2.2:3000
-        buildConfigField("String", "API_BASE_URL", "\"http://app:3000\"")
+        // API base URL - production App Runner URL
+        buildConfigField("String", "API_BASE_URL", "\"https://dz4yeass8h.eu-west-2.awsapprunner.com\"")
     }
 
     buildTypes {

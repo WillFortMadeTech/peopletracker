@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { SignJWT } from "jose";
 import { verifySession } from "@/lib/auth";
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "default-secret-change-in-production"
-);
+import { JWT_SECRET } from "@/lib/constants";
 
 export async function GET() {
   const session = await verifySession();
