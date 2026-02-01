@@ -71,7 +71,19 @@ jobs:
       - name: Wait for Deployment
         run: |
           echo "Waiting for App Runner deployment to complete..."
-          aws apprunner wait service-running --service-arn ${{ steps.get-service.outputs.service_arn }}
+          for i in {1..30}; do
+            STATUS=$(aws apprunner describe-service --service-arn ${{ steps.get-service.outputs.service_arn }} --query "Service.Status" --output text)
+            echo "Status: $STATUS"
+            if [ "$STATUS" = "RUNNING" ]; then
+              echo "Deployment complete!"
+              break
+            fi
+            if [ "$STATUS" = "CREATE_FAILED" ] || [ "$STATUS" = "DELETE_FAILED" ]; then
+              echo "Deployment failed!"
+              exit 1
+            fi
+            sleep 10
+          done
 
       - name: Get Service URL and Health Check
         working-directory: terraform

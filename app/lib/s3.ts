@@ -4,17 +4,21 @@ import {
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 
-const BUCKET_NAME = "profile-images";
-const PUBLIC_S3_URL = process.env.PUBLIC_S3_URL || "http://localhost:4566";
+const isLocal = process.env.AWS_ENDPOINT_URL !== undefined;
+const BUCKET_NAME = process.env.S3_BUCKET_NAME || "profile-images";
+const AWS_REGION = process.env.AWS_REGION || "eu-west-2";
 
 export const s3Client = new S3Client({
-  region: process.env.AWS_REGION || "eu-west-2",
+  region: AWS_REGION,
   endpoint: process.env.AWS_ENDPOINT_URL,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "test",
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "test",
-  },
-  forcePathStyle: true,
+  // Only use explicit credentials for local development (LocalStack)
+  ...(isLocal && {
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || "test",
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "test",
+    },
+  }),
+  forcePathStyle: isLocal,
 });
 
 export async function uploadProfileImage(
@@ -34,7 +38,10 @@ export async function uploadProfileImage(
     })
   );
 
-  const imageUrl = `${PUBLIC_S3_URL}/${BUCKET_NAME}/${key}`;
+  // In production, use S3 URL; locally use LocalStack URL
+  const imageUrl = isLocal
+    ? `${process.env.PUBLIC_S3_URL || "http://localhost:4566"}/${BUCKET_NAME}/${key}`
+    : `https://${BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/${key}`;
   return imageUrl;
 }
 
