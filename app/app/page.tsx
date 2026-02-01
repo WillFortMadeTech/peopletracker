@@ -1,86 +1,117 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-interface Document {
-  id: string;
-  name: string;
-  active: boolean;
-}
-
-export default function Home() {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function AuthPage() {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  useEffect(() => {
-    async function fetchDocuments() {
-      try {
-        const res = await fetch("/api/documents");
-        if (!res.ok) throw new Error("Failed to fetch");
-        const data = await res.json();
-        setDocuments(data.documents);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load documents");
-      } finally {
-        setLoading(false);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Something went wrong");
+        return;
       }
+
+      router.push(data.hasUsername ? "/dashboard" : "/setup");
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    fetchDocuments();
-  }, []);
+  };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center gap-8 py-16 px-8 bg-white dark:bg-black">
-        <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-          SageTracker
+    <div className="flex min-h-screen items-center justify-center bg-white">
+      <main className="w-full max-w-md px-8">
+        <h1 className="mb-8 text-center text-3xl font-semibold tracking-tight text-black">
+          PeopleTracker
         </h1>
-        <p className="text-zinc-600 dark:text-zinc-400">
-          Documents from LocalStack DynamoDB
-        </p>
 
-        {loading && (
-          <div className="text-zinc-500">Loading documents...</div>
-        )}
-
-        {error && (
-          <div className="rounded-lg bg-red-50 p-4 text-red-600 dark:bg-red-900/20 dark:text-red-400">
-            {error}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-black"
+            >
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="mt-1 block w-full border-2 border-black bg-white px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+              placeholder="you@example.com"
+            />
           </div>
-        )}
 
-        {!loading && !error && documents.length === 0 && (
-          <div className="text-zinc-500">No documents found</div>
-        )}
-
-        {!loading && !error && documents.length > 0 && (
-          <div className="w-full space-y-4">
-            {documents.map((doc) => (
-              <div
-                key={doc.id}
-                className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="font-medium text-black dark:text-zinc-50">
-                      {doc.name}
-                    </h2>
-                    <p className="text-sm text-zinc-500">ID: {doc.id}</p>
-                  </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-sm ${
-                      doc.active
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-                    }`}
-                  >
-                    {doc.active ? "Active" : "Inactive"}
-                  </span>
-                </div>
-              </div>
-            ))}
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-black"
+            >
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+              className="mt-1 block w-full border-2 border-black bg-white px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+              placeholder="••••••••"
+            />
           </div>
-        )}
+
+          {error && (
+            <div className="border-2 border-black bg-white p-4 text-sm text-black">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full border-2 border-black bg-black px-4 py-3 text-white transition-colors hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? "Loading..." : isLogin ? "Sign In" : "Create Account"}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError(null);
+            }}
+            className="text-sm text-black underline hover:no-underline"
+          >
+            {isLogin
+              ? "Need an account? Sign up"
+              : "Already have an account? Sign in"}
+          </button>
+        </div>
       </main>
     </div>
   );

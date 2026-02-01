@@ -33,39 +33,62 @@ PeopleTracker enables users to create accounts and securely share their location
 - **Database**: AWS DynamoDB
 - **Infrastructure**: Docker with LocalStack for local development
 
-### Mobile Application
-A companion mobile app (iOS/Android) is required for location tracking. The mobile app:
-- Runs in the background to collect location data
-- Securely transmits location updates to the server
-- Handles push notification delivery
+### Mobile Application (Android)
+A native Android app built with Kotlin and Jetpack Compose:
+- **Background Location Tracking** - Sends GPS coordinates every 60 seconds
+- **Foreground Service** - Keeps tracking active even when app is backgrounded
+- **Encrypted Storage** - Secure token storage using EncryptedSharedPreferences
+- **Docker Emulator** - Built-in emulator accessible via web browser (noVNC)
 
 ## Getting Started
 
 ### Prerequisites
 - Docker and Docker Compose
-- Node.js 18+
+- `/dev/kvm` for hardware acceleration (optional, but recommended for emulator)
 
-### Local Development
+### Quick Start
 
 1. Clone the repository
-2. Copy the environment file:
-   ```bash
-   cp .env.example .env
-   ```
-3. Start the services:
+
+2. Start all services:
    ```bash
    docker-compose up
    ```
-4. Access the app at [http://localhost:3000](http://localhost:3000)
+
+   This single command will:
+   - Build the Android APK automatically
+   - Start the web app at http://localhost:3000
+   - Start the Android emulator at http://localhost:6080
+   - Start LocalStack at http://localhost:4566
+   - Wait for the emulator to boot
+   - Automatically install the SageTracker Android app
+
+   First run takes a few minutes for the emulator to boot and app to install.
+
+3. Create a user account at http://localhost:3000
+
+4. Access the emulator at http://localhost:6080, open "SageTracker" app, and login
+
+5. (Optional) Simulate GPS movement:
+   ```bash
+   docker exec sagetracker-android adb emu geo fix -0.118092 51.509865
+   ```
 
 ## Project Structure
 
 ```
-├── app/                  # Next.js web application
-│   ├── app/              # App router pages and API routes
-│   └── lib/              # Shared libraries (DynamoDB client, etc.)
-├── localstack/           # LocalStack configuration for local AWS services
-└── docker-compose.yml    # Container orchestration
+├── app/                   # Next.js web application
+│   ├── app/api/          # API routes (auth, location, friends, etc.)
+│   └── lib/              # Backend utilities (DynamoDB, auth, etc.)
+├── androidapp/           # Android application (Kotlin)
+│   ├── app/src/main/    # Source code (data, ui, service layers)
+│   └── README.md        # Android-specific documentation
+├── localstack/          # LocalStack configuration for local AWS
+│   └── init-dynamodb.sh # DynamoDB table creation
+├── scripts/
+│   └── simulate-gps.sh  # GPS simulation for testing
+├── docker-compose.yml   # Service orchestration
+└── setup-android.sh     # Automated Android app installer
 ```
 
 ## Security

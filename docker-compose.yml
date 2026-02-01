@@ -7,7 +7,7 @@ services:
     ports:
       - "${LOCALSTACK_PORT:-4566}:4566"
     environment:
-      - SERVICES=${LOCALSTACK_SERVICES:-dynamodb}
+      - SERVICES=${LOCALSTACK_SERVICES:-dynamodb,s3}
       - DEBUG=${LOCALSTACK_DEBUG:-0}
       - AWS_DEFAULT_REGION=${AWS_REGION:-eu-west-2}
       - DOCKER_HOST=unix:///var/run/docker.sock
@@ -35,6 +35,8 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-test}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-test}
       - DYNAMODB_TABLE_NAME=${DYNAMODB_TABLE_NAME:-TestTable}
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
+      - PUBLIC_S3_URL=${PUBLIC_S3_URL:-http://localhost:4566}
     depends_on:
       localstack:
         condition: service_healthy
@@ -45,8 +47,34 @@ services:
     networks:
       - sagetracker-network
 
+  android-emulator:
+    build:
+      context: ./androidapp
+      dockerfile: Dockerfile
+    container_name: sagetracker-android
+    privileged: true
+    ports:
+      - "${ANDROID_NOVNC_PORT:-6080}:6080"
+      - "${ANDROID_ADB_PORT:-5555}:5555"
+    environment:
+      - EMULATOR_DEVICE=Samsung Galaxy S10
+      - WEB_VNC=true
+    volumes:
+      - android_data:/root/.android
+    devices:
+      - /dev/kvm:/dev/kvm
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6080"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    networks:
+      - sagetracker-network
+
 volumes:
   localstack_data:
+  android_data:
 
 networks:
   sagetracker-network:

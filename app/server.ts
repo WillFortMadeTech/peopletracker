@@ -1,0 +1,70 @@
+import { createServer } from "http";
+import { parse } from "url";
+import next from "next";
+import { Server as SocketIOServer } from "socket.io";
+import { jwtVerify } from "jose";
+import {
+  setSocketServer,
+  registerUserSocket,
+  unregisterUserSocket,
+} from "./lib/socket";
+
+const dev = process.env.NODE_ENV !== "production";
+const hostname = "localhost";
+const port = parseInt(process.env.PORT || "3000", 10);
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || "default-secret-change-in-production"
+);
+
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
+
+app.prepare().then(() => {
+  const server = createServer((req, res) => {
+    const parsedUrl = parse(req.url!, true);
+    handle(req, res, parsedUrl);
+  });
+
+  const io = new SocketIOServer(server, {
+    cors: {
+      origin: dev ? "http://localhost:3000" : process.env.NEXT_PUBLIC_APP_URL,
+      methods: ["GET", "POST"],
+      credentials: true,
+    },
+  });
+
+  setSocketServer(io);
+
+  io.use(async (socket, next) => {
+    const token = socket.handshake.auth.token;
+
+    if (!token) {
+      return next(new Error("Authentication required"));
+    }
+
+    try {
+      const { payload } = await jwtVerify(token, JWT_SECRET);
+      socket.data.userId = payload.userId as string;
+      next();
+    } catch {
+      next(new Error("Invalid token"));
+    }
+  });
+
+  io.on("connection", (socket) => {
+    const userId = socket.data.userId;
+    console.log(`User ${userId} connected with socket ${socket.id}`);
+
+    registerUserSocket(userId, socket.id);
+
+    socket.on("disconnect", () => {
+      console.log(`User ${userId} disconnected`);
+      unregisterUserSocket(userId, socket.id);
+    });
+  });
+
+  server.listen(port, () => {
+    console.log(`> Ready on http://${hostname}:${port}`);
+  });
+});

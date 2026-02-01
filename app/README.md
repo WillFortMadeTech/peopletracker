@@ -1,5 +1,9 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Disclaimer
+
+The majority of this codebase has been written by [Claude](https://claude.ai) (Anthropic's AI assistant). All code is reviewed line-by-line by the project maintainer. Security vulnerabilities and code quality will be actively managed and improved over time. Use at your own discretion.
+
 ## Getting Started
 
 First, run the development server:
@@ -34,3 +38,7 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Maps
+
+This application uses [Leaflet](https://leafletjs.com/) with [OpenStreetMap](https://www.openstreetmap.org/) for map functionality. This is a free and open source solution with no API key required and no usage limits.
