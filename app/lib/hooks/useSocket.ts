@@ -29,7 +29,7 @@ export function useSocket() {
 
         const socket = io({
           auth: { token },
-          // transports: ["websocket", "polling"], // Allow default (polling first) for better compatibility
+          transports: ["websocket"],
           reconnection: true,
           reconnectionAttempts: 5,
           reconnectionDelay: 1000,

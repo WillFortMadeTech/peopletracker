@@ -24,6 +24,10 @@ app.prepare().then(() => {
   });
 
   const io = new SocketIOServer(server, {
+    path: "/socket.io",
+    transports: ["websocket", "polling"],
+    pingTimeout: 60000,
+    pingInterval: 25000,
     cors: {
       origin: "*",
       methods: ["GET", "POST"],
