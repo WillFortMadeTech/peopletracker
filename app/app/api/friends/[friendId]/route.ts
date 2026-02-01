@@ -29,7 +29,7 @@ export async function GET(
         id: friendId,
         username: friend?.username || "Unknown",
         profileImageUrl: friend?.profileImageUrl,
-        email: friendship.permissions.seeEmail ? friend?.email : undefined,
+        email: friendship.permissions.seeFullProfile ? friend?.email : undefined,
       },
     },
   });
