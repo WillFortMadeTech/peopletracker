@@ -3,7 +3,8 @@
 import { useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 
-type SocketEventHandler = (data: unknown) => void;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SocketEventHandler = (data: any) => void;
 
 export function useSocket() {
   const socketRef = useRef<Socket | null>(null);
