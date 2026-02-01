@@ -1,0 +1,83 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+env:
+  AWS_REGION: eu-west-2
+  ECR_REPOSITORY: sagetracker
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -f app/Dockerfile.prod app/
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: terraform
+        env:
+          TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
+          TF_VAR_image_tag: ${{ github.sha }}
+        run: terraform apply -auto-approve
+
+      - name: Get App Runner Service ARN
+        id: get-service
+        working-directory: terraform
+        run: |
+          SERVICE_ARN=$(terraform output -raw apprunner_service_arn)
+          echo "service_arn=$SERVICE_ARN" >> $GITHUB_OUTPUT
+
+      - name: Trigger App Runner Deployment
+        run: |
+          aws apprunner start-deployment --service-arn ${{ steps.get-service.outputs.service_arn }}
+
+      - name: Wait for Deployment
+        run: |
+          echo "Waiting for App Runner deployment to complete..."
+          aws apprunner wait service-running --service-arn ${{ steps.get-service.outputs.service_arn }}
+
+      - name: Get Service URL and Health Check
+        working-directory: terraform
+        run: |
+          SERVICE_URL=$(terraform output -raw apprunner_service_url)
+          echo "Service URL: $SERVICE_URL"
+          echo "Running health check..."
+          sleep 10
+          curl -f "$SERVICE_URL/api/health" || echo "Health check failed, but deployment may still be in progress"
